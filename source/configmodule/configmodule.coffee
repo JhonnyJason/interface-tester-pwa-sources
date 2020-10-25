@@ -11,7 +11,9 @@ configmodule.initialize = () ->
     return    
 
 #region exposedProperties
-configmodule.exampleURL = 'https://example.website.at'
+configmodule.interfaceServers = 
+    sampleinterface: "https://localhost:6767"
+
 #endregion
 
 export default configmodule

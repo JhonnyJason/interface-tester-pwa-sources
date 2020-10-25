@@ -10,8 +10,12 @@ print = (arg) -> console.log(arg)
 #endregion
 
 ############################################################
+network = null
+
+############################################################
 interfacetestermodule.initialize = () ->
     log "interfacetestermodule.initialize"
+    network = allModules.networkmodule
     requestOneButton.addEventListener("click", requestOneButtonClicked)
     requestTwoButton.addEventListener("click", requestTwoButtonClicked)
     return
@@ -20,10 +24,46 @@ interfacetestermodule.initialize = () ->
 #region internalFunctions
 requestOneButtonClicked = ->
     log "requestOneButtonClicked"
+
+    obj = 
+        state: "pending Response..."
+        request: "one"
+
+    displayObject(obj)
+    
+    try 
+        response = await network.getResponse("asd", "moredata")
+        displayObject(response)
+    catch err then displayObject(err.stack)
+
     return
 
-requesteTwoButtonClicked = ->
+requestTwoButtonClicked = ->
     log "requesteTwoButtonClicked"
+    
+    obj = 
+        state: "pending Response..."
+        request: "two"
+
+    displayObject(obj)
+
+    try 
+        response = await network.getProxyResponse("dsa", "lessdata")
+        displayObject(response)
+    catch err then displayObject(err.stack)
+
+    return
+
+############################################################
+displayObject = (obj) ->
+    rendered = JSON.stringify(obj, null, 4)
+    rendered = rendered.replace(/\n/g, "<br/>")
+    rendered = rendered.replace(/\s/g, "_")    
+    display(rendered)
+    return
+
+display = (renderedData) ->
+    interfacetesterResponseDisplay.innerHTML = renderedData
     return
 
 #endregion
