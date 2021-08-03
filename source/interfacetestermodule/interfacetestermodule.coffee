@@ -10,14 +10,27 @@ print = (arg) -> console.log(arg)
 #endregion
 
 ############################################################
+secUtl = require("secret-manager-crypto-utils")
+clientFactory = require("secret-manager-client")
+
+############################################################
+cfg = null
 network = null
 
 ############################################################
-interfacetestermodule.initialize = () ->
+tMS = 20000
+
+############################################################
+interfacetestermodule.initialize =  ->
     log "interfacetestermodule.initialize"
+    cfg = allModules.configmodule
     network = allModules.networkmodule
+    
+    tMS = cfg.timestampFrameMS
+
     requestOneButton.addEventListener("click", requestOneButtonClicked)
     requestTwoButton.addEventListener("click", requestTwoButtonClicked)
+    requestThreeButton.addEventListener("click", requestThreeButtonClicked)
     return
 
 ############################################################
@@ -31,8 +44,20 @@ requestOneButtonClicked = ->
 
     displayObject(obj)
     
+    clientPublicKey = cfg.clientPublicKey
+
+    timestamp = Date.now()
+    olog {timestamp}
+    timestamp = timestamp - (timestamp % tMS)
+    olog {timestamp}
+
+    masterKey = cfg.masterSecretKey
+    route = "/addClientToServe"
+    content = route + JSON.stringify({clientPublicKey, timestamp})
+    signature = await secUtl.createSignature(content, masterKey)
+
     try 
-        response = await network.getResponse("asd", "moredata")
+        response = await network.addClientToServe(clientPublicKey, timestamp, signature)
         displayObject(response)
     catch err then displayObject(err.stack)
 
@@ -47,9 +72,61 @@ requestTwoButtonClicked = ->
 
     displayObject(obj)
 
+    publicKey = cfg.clientPublicKey
+
+    timestamp = Date.now()
+    olog {timestamp}
+    timestamp = timestamp - (timestamp % tMS)
+    olog {timestamp}
+
+    clientSecretKey = cfg.clientSecretKey
+    route = "/getNodeId"
+    content = route + JSON.stringify({publicKey, timestamp})
+    signature = await secUtl.createSignature(content, clientSecretKey)
+
     try 
-        response = await network.getProxyResponse("dsa", "lessdata")
+        response = await network.getNodeId(publicKey, timestamp, signature)
         displayObject(response)
+    catch err then displayObject(err.stack)
+
+    return
+
+requestThreeButtonClicked = ->
+    log "requestThreeButtonClicked"
+    
+    obj = 
+        state: "pending Response..."
+        request: "three"
+
+    displayObject(obj)
+
+    publicKey = cfg.clientPublicKey
+    clientSecretKey = cfg.clientSecretKey
+    serverURL = "https://secrets.extensivlyon.coffee"
+    client = await clientFactory.createClient(clientSecretKey, publicKey, serverURL)
+    
+    response = await client.startAcceptingSecretsFrom( cfg.serverPublicKey )
+    olog { response }
+
+    sessionSeed = await secUtl.createRandomLengthSalt()
+    
+    timestamp = Date.now()
+    olog {timestamp}
+    timestamp = timestamp - (timestamp % tMS)
+    olog {timestamp}
+
+    route = "/startSession"
+    content = route + JSON.stringify({publicKey, timestamp})
+    signature = await secUtl.createSignature(content, clientSecretKey)
+
+    try 
+        response = await network.startSession(publicKey, timestamp, signature)
+        displayObject(response)
+        serverSeed = await client.getSecretFrom("sessionSeed", cfg.serverPublicKey)
+        seed = sessionSeed + serverSeed
+        authCode = await secUtl.sha256Hex(seed)
+        olog { authCode }
+        cfg.nextAuthCode = authCode
     catch err then displayObject(err.stack)
 
     return
