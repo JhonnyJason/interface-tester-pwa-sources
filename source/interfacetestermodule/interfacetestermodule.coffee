@@ -16,17 +16,14 @@ clientFactory = require("secret-manager-client")
 ############################################################
 cfg = null
 network = null
-
-############################################################
-tMS = 20000
+validatableTimestamp = null
 
 ############################################################
 interfacetestermodule.initialize =  ->
     log "interfacetestermodule.initialize"
     cfg = allModules.configmodule
     network = allModules.networkmodule
-    
-    tMS = cfg.timestampFrameMS
+    validatableTimestamp = allModules.validatabletimestampmodule
 
     requestOneButton.addEventListener("click", requestOneButtonClicked)
     requestTwoButton.addEventListener("click", requestTwoButtonClicked)
@@ -45,13 +42,10 @@ requestOneButtonClicked = ->
     displayObject(obj)
     
     clientPublicKey = cfg.clientPublicKey
-
-    timestamp = Date.now()
-    olog {timestamp}
-    timestamp = timestamp - (timestamp % tMS)
-    olog {timestamp}
+    timestamp = validatableTimestamp.create()
 
     masterKey = cfg.masterSecretKey
+
     route = "/addClientToServe"
     content = route + JSON.stringify({clientPublicKey, timestamp})
     signature = await secUtl.createSignature(content, masterKey)
@@ -73,13 +67,10 @@ requestTwoButtonClicked = ->
     displayObject(obj)
 
     publicKey = cfg.clientPublicKey
-
-    timestamp = Date.now()
-    olog {timestamp}
-    timestamp = timestamp - (timestamp % tMS)
-    olog {timestamp}
-
+    timestamp = validatableTimestamp.create()
+    
     clientSecretKey = cfg.clientSecretKey
+    
     route = "/getNodeId"
     content = route + JSON.stringify({publicKey, timestamp})
     signature = await secUtl.createSignature(content, clientSecretKey)
@@ -109,11 +100,7 @@ requestThreeButtonClicked = ->
     olog { response }
 
     sessionSeed = await secUtl.createRandomLengthSalt()
-    
-    timestamp = Date.now()
-    olog {timestamp}
-    timestamp = timestamp - (timestamp % tMS)
-    olog {timestamp}
+    timestamp = validatableTimestamp.create()
 
     route = "/startSession"
     content = route + JSON.stringify({publicKey, timestamp})

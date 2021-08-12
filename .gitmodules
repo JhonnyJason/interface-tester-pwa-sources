@@ -7,3 +7,6 @@
 [submodule "source/statemodule"]
 	path = source/statemodule
 	url = git@github.com:JhonnyJason/pwa-sources-statemodule.git
+[submodule "source/validatabletimestampmodule"]
+	path = source/validatabletimestampmodule
+	url = git@github.com:JhonnyJason/thingy-sources-validatabletimestampmodule.git
